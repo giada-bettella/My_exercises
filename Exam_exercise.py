@@ -1,6 +1,8 @@
 # ESAM EXERCISE GROUP 3
 
 from pyqgis_scripting_ext.core import *
+import json
+import os.path
 
 folder = "/Users/giadina/Desktop/UNIBZ ⛰️/Geomatic and evironmental impact assessment /Advanced geomatics/My_exercises/"
 data_folder = folder + "data/"
@@ -8,43 +10,62 @@ data_folder = folder + "data/"
 geopackagePath = data_folder + "reduced_ne.gpkg"
 countriesName = "ne_50m_admin_0_countries"
 countriesLayer = HVectorLayer.open(geopackagePath, countriesName)
-countriesLayer.subset_filter("NAME = 'Italy' OR NAME = 'Germany'" )
+countriesLayer.subset_filter("NAME = 'Italy' OR NAME = 'Germany' OR NAME = 'Poland'" )
 
 #remove layer from map
 HMap.remove_layers_by_name(['OpenStreetMap', 'ne_50m_admin_0_countries', 'Battles', 'Country border'])
 
-# import the http requests library to get stuff from the internet
-import requests
-# import the url parsing library to urlencode the query 
-import urllib.parse
-# define the query to launch
-endpointUrl = "https://query.wikidata.org/sparql?query=";
-# define the query to launch
-query = """
-SELECT ?label ?coord ?subj ?year 
-WHERE
-{
-?subj wdt:P31 wd:Q178561 .
-{?subj wdt:P17 wd:Q38} UNION {?subj wdt:P17 wd:Q183}.
-?subj wdt:P625 ?coord .
-OPTIONAL {?subj wdt:P580 ?d1}
-OPTIONAL {?subj wdt:P585 ?d2}
-OPTIONAL {?subj wdt:P582 ?d3} BIND(IF(!BOUND(?d1),(IF(!BOUND(?d2),?d3,?d2)),?d1) as ?date) BIND(YEAR(?date) as ?year)
-?subj rdfs:label ?label filter (lang(?label) = "en")
-}
-"""
+# OPEN THE DATA
+if os.path.exists(data_folder + "result.txt"):
+    with open(data_folder + "result.txt", "r") as file:
+        result = json.loads(file.read())
+        
+        print("try")
+        
+else:
 
-# URL encode the query string
-encoded_query = urllib.parse.quote(query)
+    # import the http requests library to get stuff from the internet
+    import requests
+    # import the url parsing library to urlencode the query 
+    import urllib.parse
+    # define the query to launch
+    endpointUrl = "https://query.wikidata.org/sparql?query=";
+    # define the query to launch
+    query = """
+    SELECT ?label ?coord ?subj ?year 
+    WHERE
+    {
+    ?subj wdt:P31 wd:Q178561 .
+    {?subj wdt:P17 wd:Q38} UNION {?subj wdt:P17 wd:Q183} UNION {?subj wdt:P17 wd:Q36}.
+    ?subj wdt:P625 ?coord .
+    OPTIONAL {?subj wdt:P580 ?d1}
+    OPTIONAL {?subj wdt:P585 ?d2}
+    OPTIONAL {?subj wdt:P582 ?d3} BIND(IF(!BOUND(?d1),(IF(!BOUND(?d2),?d3,?d2)),?d1) as ?date) BIND(YEAR(?date) as ?year)
+    ?subj rdfs:label ?label filter (lang(?label) = "en")
+    }
+    """
 
-# prepare the final url
-url = f"{endpointUrl}{encoded_query}&format=json"
+    # URL encode the query string
+    encoded_query = urllib.parse.quote(query)
 
-# run the query online and get the produced result as a dictionary
-r = requests.get(url)
-result = r.json()
+    # prepare the final url
+    url = f"{endpointUrl}{encoded_query}&format=json"
 
-# print(result)
+    # run the query online and get the produced result as a dictionary
+    r = requests.get(url)
+    result = r.json()
+
+    # print(result)
+
+    # save it in a file
+    battlesData = json.dumps(result)
+
+    f = open(data_folder + "result.txt", "w")
+    f.write(battlesData)
+    f.close()
+    
+    print("except")
+    
 # -------------------------------------------------------------------------
 
 # print(len(result))
@@ -89,6 +110,7 @@ battlesLayer = HVectorLayer.new("Battles", "Point", "EPSG:3857", fields2)
 
 counterItaly = 0
 counterGermany = 0
+counterPoland = 0
 
 # SELECT DATA THAT WE NEED
 for item in result['results']['bindings']:
@@ -115,12 +137,14 @@ for item in result['results']['bindings']:
             if year and 0 <= year <= 1000:
                 if countriesName == "Italy":
                     counterItaly += 1
-                else:
+                if countriesName == "Germany":
                     counterGermany += 1
-
+                elif countriesName == "Poland":
+                    counterPoland += 1
+                
     # print(name, year, coords)
     
-print(counterItaly, counterGermany)
+print(counterItaly, counterGermany, counterPoland)
     
 # CREATE GPKG
 path = folder + "battles.gpkg"
@@ -148,19 +172,19 @@ styles = [
     HMarker("circle", 2) + HFill("orange") + HStroke("black", 0.1)
 ]
 
-# field = "if(year >= 0 and year <= 1000, NAME,'')"
-# labelProperties3 = {
-#     "font": "Times New Roman",
-#     "color": "black",
-#     "size": 10,
-#     "field": field,
-#     "xoffset": 0,
-#     "yoffset": -8
-# }
+field = "if(year >= 0 and year <= 1000, NAME,'')"
+labelProperties3 = {
+    "font": "Times New Roman",
+    "color": "black",
+    "size": 10,
+    "field": field,
+    "xoffset": 0,
+    "yoffset": -8
+}
 
-# pointStyle += HLabel(**labelProperties3) + HHalo("white", 2)
-# battlesLayer.set_graduated_style('year', ranges, styles, pointStyle)
-battlesLayer.set_graduated_style('year', ranges, styles)
+pointStyle = HLabel(**labelProperties3) + HHalo("white", 2)
+battlesLayer.set_graduated_style('year', ranges, styles, pointStyle)
+# battlesLayer.set_graduated_style('year', ranges, styles)
 
 # ADD LAYER TO THE MAP
 HMap.add_layer(countriesLayer3857)
@@ -216,7 +240,7 @@ printer.add_legend(**legendProperties)
 labelProperties2 = {
     "x": 210,
     "y": 50,
-    "text": f"Battles between 0 and 1000:\nItaly: {counterItaly}\nGermany: {counterGermany}",
+    "text": f"Battles between 0 and 1000:\nItaly: {counterItaly}\nGermany: {counterGermany}\nPoland: {counterPoland}",
     "font": "Times New Roman",
     "font_size": 15,
     "bold": True,
@@ -227,5 +251,3 @@ printer.add_label(**labelProperties2)
 # PRINT THE PDF
 outputPdf = f"{folder}final_map.pdf"
 printer.dump_to_pdf(outputPdf)
-
-

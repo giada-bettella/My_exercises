@@ -3,7 +3,7 @@
 from pyqgis_scripting_ext.core import *
 
 folder = "/Users/giadina/Desktop/UNIBZ ⛰️/Geomatic and evironmental impact assessment /Advanced geomatics/My_exercises"
-geopackagePath = "/Users/giadina/Desktop/UNIBZ ⛰️/Geomatic and evironmental impact assessment /Advanced geomatics/Data/natural_earth_vector/packages/natural_earth_vector.gpkg"
+geopackagePath = folder + "/data/reduced_ne.gpkg"
 countriesName = "ne_50m_admin_0_countries"
 
 schema = {
