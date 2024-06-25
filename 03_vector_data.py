@@ -6,6 +6,7 @@ folder = "/Users/giadina/Desktop/UNIBZ ⛰️/Geomatic and evironmental impact a
 geopackagePath = folder + "/data/reduced_ne.gpkg"
 countriesName = "ne_50m_admin_0_countries"
 
+# create a schema
 schema = {
     "name": "string"
 }

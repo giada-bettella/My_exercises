@@ -23,7 +23,6 @@ for feature in countriesFeatures:
     if name == 'France':
         countryGeometry = feature.geometry
         
-
 # cities
 nameIndexCities = citiesLayer.field_index('NAME')
 citiesFeatures = citiesLayer.features()

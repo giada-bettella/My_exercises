@@ -5,7 +5,6 @@ from pyqgis_scripting_ext.core import *
 folder = "/Users/giadina/Desktop/UNIBZ ⛰️/Geomatic and evironmental impact assessment /Advanced geomatics/My_exercises"
 geopackagePath = folder + "/data/reduced_ne.gpkg"
 countriesName = "ne_50m_admin_0_countries"
-
 countriesLayer = HVectorLayer.open(geopackagePath, countriesName)
 
 ranges = [
